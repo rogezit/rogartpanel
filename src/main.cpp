@@ -14,10 +14,10 @@
 // ── PINES ─────────────────────────────────────────────────
 #define PIN_R1 25
 #define PIN_G1 26
-#define PIN_B1 27
 #define PIN_R2 14
 #define PIN_G2 12
-#define PIN_B2 13
+#define PIN_B1 13
+#define PIN_B2 27
 #define PIN_A 23
 #define PIN_B 19
 #define PIN_C 5
@@ -71,7 +71,6 @@ void setup()
 
   // Estas 3 líneas AFUERA del if, después del OK
   display->flipDMABuffer();
-  display->showDMABuffer();
   display->setBrightness8(255);
   display->clearScreen();
   delay(100);
