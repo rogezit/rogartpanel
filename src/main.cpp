@@ -1,44 +1,17 @@
 /**
- * ╔══════════════════════════════════════════════════════════╗
- * ║   TEST PANEL HUB75 · P10 32×16 · 1/8 scan              ║
- * ║   Librería: ESP32-HUB75-MatrixPanel-DMA                 ║
- * ╚══════════════════════════════════════════════════════════╝
- *
- *  CONEXIONES IDC 16 pines → ESP32 (lado derecho):
- *  ─────────────────────────────────────────────────
- *  Pin 1  R1   → GPIO 25
- *  Pin 2  G1   → GPIO 26
- *  Pin 3  B1   → GPIO 27
- *  Pin 4  GND  → GND
- *  Pin 5  R2   → GPIO 14
- *  Pin 6  G2   → GPIO 12
- *  Pin 7  B2   → GPIO 13
- *  Pin 8  GND  → GND
- *  Pin 9  A    → GPIO 23
- *  Pin 10 B    → GPIO 19
- *  Pin 11 C    → GPIO  5
- *  Pin 12 D    → GPIO 17   ← necesario para 1/8 scan
- *  Pin 13 CLK  → GPIO 16
- *  Pin 14 LAT  → GPIO  4
- *  Pin 15 OE   → GPIO 15
- *  Pin 16 GND  → GND
- *  ─────────────────────────────────────────────────
- *  POWER rojo  → 5V fuente externa
- *  POWER negro → GND fuente externa
- *  ─────────────────────────────────────────────────
- *  ⚠ GND del ESP32 y GND de la fuente deben estar
- *    unidos (cable corto entre ambos GND)
+ * TEST PANEL P10 32x16 · 1/8 scan · ESP32
+ * Con configuración explícita para paneles chinos P10
  */
 
 #include <Arduino.h>
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
-// ── DIMENSIONES DEL PANEL ─────────────────────────────────
+// ── DIMENSIONES ───────────────────────────────────────────
 #define PANEL_WIDTH   32
 #define PANEL_HEIGHT  16
-#define PANELS_NUM     1   // solo un panel por ahora
+#define PANELS_NUM     1
 
-// ── PINES HUB75 ───────────────────────────────────────────
+// ── PINES ─────────────────────────────────────────────────
 #define PIN_R1   25
 #define PIN_G1   26
 #define PIN_B1   27
@@ -55,18 +28,13 @@
 
 MatrixPanel_I2S_DMA *display = nullptr;
 
-// Colores útiles (formato 16-bit 565)
-uint16_t RED, GREEN, BLUE, WHITE, YELLOW, CYAN, MAGENTA, BLACK;
-
-// ──────────────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);
-  Serial.println(F("\n[ PANEL HUB75 ] Iniciando..."));
+  delay(500);
+  Serial.println(F("Iniciando panel P10 32x16 1/8 scan..."));
 
-  // Configuración del panel
   HUB75_I2S_CFG mxconfig(PANEL_WIDTH, PANEL_HEIGHT, PANELS_NUM);
 
-  // Asignar pines
   mxconfig.gpio.r1  = PIN_R1;
   mxconfig.gpio.g1  = PIN_G1;
   mxconfig.gpio.b1  = PIN_B1;
@@ -81,115 +49,79 @@ void setup() {
   mxconfig.gpio.lat = PIN_LAT;
   mxconfig.gpio.oe  = PIN_OE;
 
-  // Panel P10 1/8 scan
-  mxconfig.driver = HUB75_I2S_CFG::SHIFTREG;
-  mxconfig.clkphase = false;
+  // Configuración específica para P10 chinos 1/8 scan
+  mxconfig.driver     = HUB75_I2S_CFG::SHIFTREG;
+  mxconfig.clkphase   = false;
+  mxconfig.i2sspeed   = HUB75_I2S_CFG::HZ_10M;  // bajar velocidad de reloj
+  mxconfig.latch_blanking = 4;
 
-  // Crear display
   display = new MatrixPanel_I2S_DMA(mxconfig);
-  display->begin();
-  display->setBrightness8(80);   // 0-255, empieza suave
+
+  if (display->begin() == false) {
+    Serial.println(F("ERROR: No se pudo inicializar el panel."));
+    Serial.println(F("Verifica conexiones y alimentacion."));
+    while(true) { delay(1000); }
+  }
+
+  Serial.println(F("Panel inicializado OK."));
+  display->setBrightness8(128);
   display->clearScreen();
+  delay(100);
 
-  // Definir colores
-  RED     = display->color565(255,   0,   0);
-  GREEN   = display->color565(  0, 255,   0);
-  BLUE    = display->color565(  0,   0, 255);
-  WHITE   = display->color565(255, 255, 255);
-  YELLOW  = display->color565(255, 255,   0);
-  CYAN    = display->color565(  0, 255, 255);
-  MAGENTA = display->color565(255,   0, 255);
-  BLACK   = display->color565(  0,   0,   0);
+  // ── PRUEBA 1: Panel completo blanco ───────────────────
+  // Si ves algo blanco = conexiones RGB bien
+  Serial.println(F("Blanco completo..."));
+  display->fillScreen(display->color565(255, 255, 255));
+  delay(2000);
 
-  Serial.println(F("[ PANEL HUB75 ] Listo."));
+  // ── PRUEBA 2: Solo rojo ───────────────────────────────
+  Serial.println(F("Solo rojo..."));
+  display->fillScreen(display->color565(255, 0, 0));
+  delay(2000);
+
+  // ── PRUEBA 3: Solo verde ──────────────────────────────
+  Serial.println(F("Solo verde..."));
+  display->fillScreen(display->color565(0, 255, 0));
+  delay(2000);
+
+  // ── PRUEBA 4: Solo azul ───────────────────────────────
+  Serial.println(F("Solo azul..."));
+  display->fillScreen(display->color565(0, 0, 255));
+  delay(2000);
+
+  display->clearScreen();
+  Serial.println(F("Prueba de colores completa."));
 }
 
-// ──────────────────────────────────────────────────────────
 void loop() {
+  // Marcador estático para verificar texto
+  display->clearScreen();
 
-  // ── PRUEBA 1: Llenar con colores sólidos ──────────────
-  Serial.println(F("Rojo..."));
-  display->fillScreen(RED);
-  delay(800);
-
-  Serial.println(F("Verde..."));
-  display->fillScreen(GREEN);
-  delay(800);
-
-  Serial.println(F("Azul..."));
-  display->fillScreen(BLUE);
-  delay(800);
-
-  display->fillScreen(BLACK);
-  delay(200);
-
-  // ── PRUEBA 2: Líneas de colores ───────────────────────
-  Serial.println(F("Lineas de colores..."));
-  display->drawFastHLine(0, 0,  PANEL_WIDTH, RED);
-  display->drawFastHLine(0, 2,  PANEL_WIDTH, GREEN);
-  display->drawFastHLine(0, 4,  PANEL_WIDTH, BLUE);
-  display->drawFastHLine(0, 6,  PANEL_WIDTH, YELLOW);
-  display->drawFastHLine(0, 8,  PANEL_WIDTH, CYAN);
-  display->drawFastHLine(0, 10, PANEL_WIDTH, MAGENTA);
-  display->drawFastHLine(0, 12, PANEL_WIDTH, WHITE);
-  display->drawFastHLine(0, 14, PANEL_WIDTH, RED);
-  delay(1500);
-
-  display->fillScreen(BLACK);
-  delay(200);
-
-  // ── PRUEBA 3: Marcador simulado ───────────────────────
-  Serial.println(F("Marcador simulado..."));
-  display->fillScreen(BLACK);
-
-  // Equipo A (rojo) - lado izquierdo
+  // Fondo negro, números grandes
   display->setTextSize(2);
-  display->setTextColor(RED);
-  display->setCursor(1, 1);
+
+  // Equipo A rojo
+  display->setTextColor(display->color565(255, 0, 0));
+  display->setCursor(2, 1);
   display->print("3");
 
-  // Separador
-  display->setTextColor(WHITE);
+  // Guión blanco
+  display->setTextColor(display->color565(255, 255, 255));
   display->setTextSize(1);
   display->setCursor(14, 5);
   display->print("-");
 
-  // Equipo B (azul) - lado derecho
+  // Equipo B azul
   display->setTextSize(2);
-  display->setTextColor(BLUE);
-  display->setCursor(19, 1);
+  display->setTextColor(display->color565(0, 100, 255));
+  display->setCursor(20, 1);
   display->print("1");
 
-  // Sets pequeños abajo
-  display->setTextSize(1);
-  display->setTextColor(display->color565(180,180,180));
-  display->setCursor(1, 10);
-  display->print("A");
-  display->setCursor(8, 10);
-  display->print("2-1");
-  display->setCursor(20, 10);
-  display->print("B");
+  delay(5000);
 
-  delay(3000);
-
-  display->fillScreen(BLACK);
-  delay(300);
-
-  // ── PRUEBA 4: Píxeles individuales ───────────────────
-  Serial.println(F("Pixeles..."));
-  for (int y = 0; y < PANEL_HEIGHT; y++) {
-    for (int x = 0; x < PANEL_WIDTH; x++) {
-      uint16_t color = display->color565(
-        random(0, 255),
-        random(0, 255),
-        random(0, 255)
-      );
-      display->drawPixel(x, y, color);
-      delay(3);
-    }
-  }
+  // Alternar brillo para confirmar que el panel responde
+  display->setBrightness8(200);
   delay(1000);
-
-  display->fillScreen(BLACK);
-  delay(300);
+  display->setBrightness8(128);
+  delay(1000);
 }
