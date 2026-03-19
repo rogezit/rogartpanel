@@ -50,7 +50,7 @@ void setup() {
   mxconfig.gpio.oe  = PIN_OE;
 
   // Configuración específica para P10 chinos 1/8 scan
-  mxconfig.driver     = HUB75_I2S_CFG::SHIFTREG;
+  mxconfig.driver = HUB75_I2S_CFG::FM6126A;
   mxconfig.clkphase   = false;
   mxconfig.i2sspeed   = HUB75_I2S_CFG::HZ_10M;  // bajar velocidad de reloj
   mxconfig.latch_blanking = 4;
@@ -58,6 +58,7 @@ void setup() {
   display = new MatrixPanel_I2S_DMA(mxconfig);
 
   if (display->begin() == false) {
+    mxconfig.double_buff = false;
     Serial.println(F("ERROR: No se pudo inicializar el panel."));
     Serial.println(F("Verifica conexiones y alimentacion."));
     while(true) { delay(1000); }
