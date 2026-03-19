@@ -7,65 +7,72 @@
 #include <ESP32-HUB75-MatrixPanel-I2S-DMA.h>
 
 // ── DIMENSIONES ───────────────────────────────────────────
-#define PANEL_WIDTH   32
-#define PANEL_HEIGHT  16
-#define PANELS_NUM     1
+#define PANEL_WIDTH 32
+#define PANEL_HEIGHT 16
+#define PANELS_NUM 1
 
 // ── PINES ─────────────────────────────────────────────────
-#define PIN_R1   25
-#define PIN_G1   26
-#define PIN_B1   27
-#define PIN_R2   14
-#define PIN_G2   12
-#define PIN_B2   13
-#define PIN_A    23
-#define PIN_B    19
-#define PIN_C     5
-#define PIN_D    17
-#define PIN_CLK  16
-#define PIN_LAT   4
-#define PIN_OE   15
+#define PIN_R1 25
+#define PIN_G1 26
+#define PIN_B1 27
+#define PIN_R2 14
+#define PIN_G2 12
+#define PIN_B2 13
+#define PIN_A 23
+#define PIN_B 19
+#define PIN_C 5
+#define PIN_D 17
+#define PIN_CLK 16
+#define PIN_LAT 4
+#define PIN_OE 15
 
 MatrixPanel_I2S_DMA *display = nullptr;
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   delay(500);
   Serial.println(F("Iniciando panel P10 32x16 1/8 scan..."));
 
   HUB75_I2S_CFG mxconfig(PANEL_WIDTH, PANEL_HEIGHT, PANELS_NUM);
 
-  mxconfig.gpio.r1  = PIN_R1;
-  mxconfig.gpio.g1  = PIN_G1;
-  mxconfig.gpio.b1  = PIN_B1;
-  mxconfig.gpio.r2  = PIN_R2;
-  mxconfig.gpio.g2  = PIN_G2;
-  mxconfig.gpio.b2  = PIN_B2;
-  mxconfig.gpio.a   = PIN_A;
-  mxconfig.gpio.b   = PIN_B;
-  mxconfig.gpio.c   = PIN_C;
-  mxconfig.gpio.d   = PIN_D;
+  mxconfig.gpio.r1 = PIN_R1;
+  mxconfig.gpio.g1 = PIN_G1;
+  mxconfig.gpio.b1 = PIN_B1;
+  mxconfig.gpio.r2 = PIN_R2;
+  mxconfig.gpio.g2 = PIN_G2;
+  mxconfig.gpio.b2 = PIN_B2;
+  mxconfig.gpio.a = PIN_A;
+  mxconfig.gpio.b = PIN_B;
+  mxconfig.gpio.c = PIN_C;
+  mxconfig.gpio.d = PIN_D;
   mxconfig.gpio.clk = PIN_CLK;
   mxconfig.gpio.lat = PIN_LAT;
-  mxconfig.gpio.oe  = PIN_OE;
+  mxconfig.gpio.oe = PIN_OE;
 
   // Configuración específica para P10 chinos 1/8 scan
   mxconfig.driver = HUB75_I2S_CFG::FM6126A;
-  mxconfig.clkphase   = false;
-  mxconfig.i2sspeed   = HUB75_I2S_CFG::HZ_10M;  // bajar velocidad de reloj
+  mxconfig.clkphase = false;
+  mxconfig.i2sspeed = HUB75_I2S_CFG::HZ_10M; // bajar velocidad de reloj
   mxconfig.latch_blanking = 4;
+  mxconfig.min_refresh_rate = 60;
 
   display = new MatrixPanel_I2S_DMA(mxconfig);
 
-  if (display->begin() == false) {
-    mxconfig.double_buff = false;
+  if (display->begin() == false)
+  {
     Serial.println(F("ERROR: No se pudo inicializar el panel."));
     Serial.println(F("Verifica conexiones y alimentacion."));
-    while(true) { delay(1000); }
+    while (true)
+    {
+      delay(1000);
+    }
   }
 
-  Serial.println(F("Panel inicializado OK."));
-  display->setBrightness8(128);
+  // Estas 3 líneas AFUERA del if, después del OK
+  display->flipDMABuffer();
+  display->showDMABuffer();
+  display->setBrightness8(255);
   display->clearScreen();
   delay(100);
 
@@ -94,7 +101,8 @@ void setup() {
   Serial.println(F("Prueba de colores completa."));
 }
 
-void loop() {
+void loop()
+{
   // Marcador estático para verificar texto
   display->clearScreen();
 
